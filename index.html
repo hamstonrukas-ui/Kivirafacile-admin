@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Kivirafacile</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container { max-width: 1400px; margin: 0 auto; }
+        .header {
+            background: white;
+            padding: 24px;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            margin-bottom: 24px;
+        }
+        .header h1 { color: #1f2937; font-size: 28px; margin-bottom: 8px; }
+        .header p { color: #6b7280; }
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+        }
+        .tab {
+            background: white;
+            border: none;
+            padding: 10px 18px;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            color: #6b7280;
+            transition: all 0.3s;
+        }
+        .tab.active {
+            background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+            color: white;
+            box-shadow: 0 4px 12px rgba(124,58,237,0.3);
+        }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+            text-align: center;
+        }
+        .stat-card h3 { font-size: 13px; color: #6b7280; margin-bottom: 8px; }
+        .stat-card .value { font-size: 32px; font-weight: 700; color: #1f2937; }
+        .stat-card.premium .value { color: #7c3aed; }
+        .stat-card.blocked .value { color: #ef4444; }
+        .stat-card.translation .value { color: #0891b2; }
+        .card {
+            background: white;
+            padding: 24px;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            margin-bottom: 24px;
+        }
+        .card h2 { color: #1f2937; font-size: 20px; margin-bottom: 20px; }
+        table { width: 100%; border-collapse: collapse; }
+        th { background: #f9fafb; padding: 12px; text-align: left; font-size: 13px; color: #6b7280; font-weight: 600; border-bottom: 2px solid #e5e7eb; }
+        td { padding: 14px 12px; border-bottom: 1px solid #f3f4f6; vertical-align: middle; }
+        tr:hover td { background: #fafafa; }
+        .status {
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 700;
+            display: inline-block;
+        }
+        .status.premium { background: #ede9fe; color: #7c3aed; }
+        .status.pending { background: #fef3c7; color: #d97706; }
+        .status.approved { background: #d1fae5; color: #059669; }
+        .status.rejected { background: #fee2e2; color: #dc2626; }
+        .status.blocked { background: #fee2e2; color: #dc2626; }
+        .status.free { background: #f3f4f6; color: #6b7280; }
+        .status.translation { background: #e0f2fe; color: #0891b2; }
+        .badge {
+            background: #e5e7eb;
+            padding: 2px 8px;
+            border-radius: 8px;
+            font-size: 11px;
+            font-weight: 600;
+            color: #374151;
+        }
+        .badge.general { background: #ede9fe; color: #7c3aed; }
+        .badge.translation { background: #e0f2fe; color: #0891b2; }
+        .btn {
+            padding: 7px 14px;
+            border: none;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin: 2px;
+        }
+        .btn-approve { background: #d1fae5; color: #059669; }
+        .btn-approve:hover { background: #059669; color: white; }
+        .btn-reject { background: #fee2e2; color: #dc2626; }
+        .btn-reject:hover { background: #dc2626; color: white; }
+        .btn-fraud { background: #1f2937; color: white; }
+        .btn-fraud:hover { background: #111827; }
+        .btn-unblock { background: #fef3c7; color: #d97706; }
+        .btn-unblock:hover { background: #d97706; color: white; }
+        .btn-add { background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%); color: white; padding: 10px 20px; }
+        .btn-add:hover { opacity: 0.9; }
+        .btn-delete { background: #fee2e2; color: #dc2626; padding: 6px 12px; }
+        .btn-edit { background: #fef3c7; color: #d97706; padding: 6px 12px; }
+        .actions { display: flex; gap: 4px; flex-wrap: wrap; }
+        .user-info { display: flex; flex-direction: column; }
+        .user-email { font-weight: 600; color: #1f2937; }
+        .user-name { font-size: 12px; color: #6b7280; }
+        .empty-state { text-align: center; padding: 40px; color: #9ca3af; }
+        .empty-state-icon { font-size: 48px; margin-bottom: 12px; }
+        code { font-family: monospace; background: #f3f4f6; padding: 2px 6px; border-radius: 4px; font-size: 12px; }
+        .search-box input {
+            width: 100%;
+            padding: 10px 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 10px;
+            font-size: 14px;
+            margin-bottom: 16px;
+        }
+        .search-box input:focus { outline: none; border-color: #7c3aed; }
+        .filters { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+        .filter-btn { padding: 6px 14px; border: 2px solid #e5e7eb; border-radius: 20px; background: white; font-size: 13px; cursor: pointer; font-weight: 600; color: #6b7280; }
+        .filter-btn.active { border-color: #7c3aed; color: #7c3aed; background: #ede9fe; }
+        /* Login */
+        .login-screen {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .login-card {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+        .login-card h2 { margin-bottom: 8px; color: #1f2937; font-size: 24px; }
+        .login-card p { color: #6b7280; margin-bottom: 24px; }
+        .login-card input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 10px;
+            font-size: 16px;
+            margin-bottom: 16px;
+        }
+        .btn-login {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #7c3aed, #6d28d9);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+        .error-msg { color: #dc2626; font-size: 14px; margin-top: 8px; display: none; }
+        /* Sponsors */
+        .sponsor-form {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        .sponsor-form input, .sponsor-form select, .sponsor-form textarea {
+            padding: 10px 14px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: inherit;
+        }
+        .sponsor-form input:focus, .sponsor-form select:focus { outline: none; border-color: #7c3aed; }
+        .sponsor-form .full-width { grid-column: 1 / -1; }
+        .tier-diamant { color: #60a5fa; font-weight: 700; }
+        .tier-or { color: #f59e0b; font-weight: 700; }
+        .tier-argent { color: #9ca3af; font-weight: 700; }
+        .payment-tabs { display: flex; gap: 8px; margin-bottom: 16px; }
+        .payment-tab { padding: 8px 16px; border: 2px solid #e5e7eb; border-radius: 20px; background: white; font-size: 13px; cursor: pointer; font-weight: 600; color: #6b7280; }
+        .payment-tab.active { border-color: #7c3aed; color: white; background: linear-gradient(135deg, #7c3aed, #6d28d9); }
+        .payment-tab.translation.active { border-color: #0891b2; background: linear-gradient(135deg, #0891b2, #0e7490); }
+    </style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen" class="login-screen">
+    <div class="login-card">
+        <div style="font-size:64px;margin-bottom:16px">🛡️</div>
+        <h2>Admin Dashboard</h2>
+        <p>Kivirafacile — Accès administrateur</p>
+        <form id="loginForm">
+            <input type="password" id="adminPassword" placeholder="Mot de passe administrateur" required>
+            <button type="submit" class="btn-login">Se connecter</button>
+        </form>
+        <p class="error-msg" id="login-error">Mot de passe incorrect</p>
+    </div>
+</div>
+
+<!-- DASHBOARD -->
+<div id="admin-content" style="display:none">
+    <div class="container">
+        <div class="header">
+            <h1>🛡️ Admin Dashboard - Kivirafacile</h1>
+            <p>Gestion complète · <span id="last-refresh">—</span> · <a href="#" onclick="loadData()" style="color:#7c3aed">Rafraîchir</a></p>
+        </div>
+
+        <!-- ONGLETS -->
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('overview')">📊 Vue d'ensemble</button>
+            <button class="tab" onclick="switchTab('users')">👥 Utilisateurs</button>
+            <button class="tab" onclick="switchTab('payments')">💰 Paiements</button>
+            <button class="tab" onclick="switchTab('blocked')">🔒 Bloqués</button>
+            <button class="tab" onclick="switchTab('sponsors')">🏆 Sponsors</button>
+        </div>
+
+        <!-- TAB: VUE D'ENSEMBLE -->
+        <div id="tab-overview" class="tab-content active">
+            <div class="stats">
+                <div class="stat-card">
+                    <h3>Total Utilisateurs</h3>
+                    <div class="value" id="totalUsers">0</div>
+                </div>
+                <div class="stat-card premium">
+                    <h3>Premium Général</h3>
+                    <div class="value" id="premiumUsers">0</div>
+                </div>
+                <div class="stat-card translation">
+                    <h3>Premium Traduction</h3>
+                    <div class="value" id="translationPremiumUsers">0</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Comptes Gratuits</h3>
+                    <div class="value" id="freeUsers">0</div>
+                </div>
+                <div class="stat-card blocked">
+                    <h3>Comptes Bloqués</h3>
+                    <div class="value" id="blockedUsersCount">0</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Nouveaux aujourd'hui</h3>
+                    <div class="value" id="newToday">0</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Paiements en attente</h3>
+                    <div class="value" id="pendingPayments">0</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Sponsors actifs</h3>
+                    <div class="value" id="sponsorsCount">0</div>
+                </div>
+            </div>
+            <div class="card">
+                <h2>📈 Synthèse</h2>
+                <p>Total utilisateurs : <strong id="evolution-total">0</strong></p>
+                <p>Taux de conversion Premium Général : <strong id="conversion-rate">0%</strong></p>
+                <p>Taux de conversion Premium Traduction : <strong id="conversion-rate-translation">0%</strong></p>
+                <p>Total paiements approuvés : <strong id="total-approved">0</strong></p>
+            </div>
+        </div>
+
+        <!-- TAB: UTILISATEURS -->
+        <div id="tab-users" class="tab-content">
+            <div class="card">
+                <h2>👥 Tous les utilisateurs</h2>
+                <div class="search-box">
+                    <input type="text" id="userSearch" placeholder="🔍 Rechercher par nom ou email...">
+                </div>
+                <div class="filters">
+                    <button class="filter-btn active" data-filter="all">Tous</button>
+                    <button class="filter-btn" data-filter="premium">Premium Général</button>
+                    <button class="filter-btn" data-filter="translation">Premium Traduction</button>
+                    <button class="filter-btn" data-filter="free">Gratuits</button>
+                    <button class="filter-btn" data-filter="blocked">Bloqués</button>
+                </div>
+                <div id="users-list"></div>
+            </div>
+        </div>
+
+        <!-- TAB: PAIEMENTS -->
+        <div id="tab-payments" class="tab-content">
+            <div class="card">
+                <h2>💰 Paiements en attente</h2>
+
+                <!-- Sous-onglets : Général / Traduction -->
+                <div class="payment-tabs">
+                    <button class="payment-tab active" onclick="switchPaymentTab('general')">
+                        💜 Général (1000 FC)
+                        <span id="pending-general-count" style="background:#7c3aed;color:white;border-radius:10px;padding:1px 7px;margin-left:6px;font-size:11px">0</span>
+                    </button>
+                    <button class="payment-tab translation" onclick="switchPaymentTab('translation')">
+                        🔵 Traduction (2000 FC)
+                        <span id="pending-translation-count" style="background:#0891b2;color:white;border-radius:10px;padding:1px 7px;margin-left:6px;font-size:11px">0</span>
+                    </button>
+                </div>
+
+                <div id="payments-general" class="payment-content">
+                    <div id="payments-list-general"></div>
+                </div>
+                <div id="payments-translation" class="payment-content" style="display:none">
+                    <div id="payments-list-translation"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB: BLOQUÉS -->
+        <div id="tab-blocked" class="tab-content">
+            <div class="card">
+                <h2>🔒 Comptes bloqués</h2>
+                <div id="blocked-list"></div>
+            </div>
+        </div>
+
+        <!-- TAB: SPONSORS -->
+        <div id="tab-sponsors" class="tab-content">
+            <div class="card">
+                <h2>🏆 Ajouter un sponsor</h2>
+                <div class="sponsor-form">
+                    <input type="text" id="sponsor-name" placeholder="Nom du sponsor *">
+                    <select id="sponsor-tier">
+                        <option value="diamant">💎 Diamant ($50+)</option>
+                        <option value="or">🥇 Or ($20)</option>
+                        <option value="argent">🥈 Argent ($10)</option>
+                    </select>
+                    <input type="number" id="sponsor-amount" placeholder="Montant (ex: 50)">
+                    <select id="sponsor-currency">
+                        <option value="USD">USD ($)</option>
+                        <option value="FC">Franc Congolais (FC)</option>
+                        <option value="EUR">EUR (€)</option>
+                    </select>
+                    <input type="text" id="sponsor-message" class="full-width" placeholder="Message ou dédicace (optionnel)">
+                    <button class="btn btn-add full-width" onclick="addSponsor()">
+                        ➕ Ajouter le sponsor
+                    </button>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>🏆 Liste des sponsors</h2>
+                <div id="sponsors-list"></div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    const API_URL = 'https://kivirafacile-api.onrender.com/api';
+    let adminPassword = '';
+    let allUsers = [];
+    let allPayments = [];
+    let currentFilter = 'all';
+    let currentPaymentTab = 'general';
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // CONNEXION
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const password = document.getElementById('adminPassword').value;
+        const errorDiv = document.getElementById('login-error');
+        errorDiv.style.display = 'none';
+
+        try {
+            const response = await fetch(`${API_URL}/admin/payments`, {
+                headers: { 'X-Admin-Password': password }
+            });
+
+            if (response.ok) {
+                adminPassword = password;
+                document.getElementById('login-screen').style.display = 'none';
+                document.getElementById('admin-content').style.display = 'block';
+                loadData();
+            } else {
+                errorDiv.style.display = 'block';
+            }
+        } catch (error) {
+            errorDiv.textContent = 'Erreur de connexion au serveur';
+            errorDiv.style.display = 'block';
+        }
+    });
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // NAVIGATION
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    const TAB_NAMES = ['overview', 'users', 'payments', 'blocked', 'sponsors'];
+
+    function switchTab(tab) {
+        document.querySelectorAll('.tab').forEach((t, i) => {
+            t.classList.toggle('active', TAB_NAMES[i] === tab);
+        });
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        document.getElementById(`tab-${tab}`).classList.add('active');
+
+        if (tab === 'sponsors') loadSponsors();
+    }
+
+    function switchPaymentTab(type) {
+        currentPaymentTab = type;
+        document.querySelectorAll('.payment-tab').forEach((t, i) => {
+            t.classList.toggle('active', ['general', 'translation'][i] === type);
+        });
+        document.getElementById('payments-general').style.display = type === 'general' ? 'block' : 'none';
+        document.getElementById('payments-translation').style.display = type === 'translation' ? 'block' : 'none';
+    }
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // CHARGEMENT DES DONNÉES
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    async function loadData() {
+        document.getElementById('last-refresh').textContent = new Date().toLocaleTimeString('fr-FR');
+        await Promise.all([loadUsers(), loadPayments(), loadBlockedUsers()]);
+    }
+
+    async function loadUsers() {
+        try {
+            const r = await fetch(`${API_URL}/admin/users`, {
+                headers: { 'X-Admin-Password': adminPassword }
+            });
+            const data = await r.json();
+            allUsers = data.users;
+            displayUsers(allUsers);
+            updateUserStats(data.stats);
+        } catch (e) { console.error('Erreur users:', e); }
+    }
+
+    async function loadPayments() {
+        try {
+            const r = await fetch(`${API_URL}/admin/payments`, {
+                headers: { 'X-Admin-Password': adminPassword }
+            });
+            const data = await r.json();
+            allPayments = data.payments;
+
+            // Séparer par type de produit
+            const generalPayments = allPayments.filter(p => p.status === 'PENDING' && p.producttype !== 'translation');
+            const translationPayments = allPayments.filter(p => p.status === 'PENDING' && p.producttype === 'translation');
+
+            displayPayments(generalPayments, 'general');
+            displayPayments(translationPayments, 'translation');
+
+            // Compteurs
+            document.getElementById('pending-general-count').textContent = generalPayments.length;
+            document.getElementById('pending-translation-count').textContent = translationPayments.length;
+
+            updatePaymentStats(data.stats);
+        } catch (e) { console.error('Erreur paiements:', e); }
+    }
+
+    async function loadBlockedUsers() {
+        try {
+            const r = await fetch(`${API_URL}/admin/blocked-users`, {
+                headers: { 'X-Admin-Password': adminPassword }
+            });
+            const data = await r.json();
+            displayBlockedUsers(data.blockedUsers);
+        } catch (e) { console.error('Erreur bloqués:', e); }
+    }
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // AFFICHAGE UTILISATEURS
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    function displayUsers(users) {
+        const container = document.getElementById('users-list');
+        if (!users.length) {
+            container.innerHTML = `<div class="empty-state"><div class="empty-state-icon">👤</div><p>Aucun utilisateur trouvé</p></div>`;
+            return;
+        }
+        container.innerHTML = `
+            <table>
+                <thead>
+                    <tr>
+                        <th>Utilisateur</th>
+                        <th>Inscription</th>
+                        <th>Général</th>
+                        <th>Traduction</th>
+                        <th>Paiements</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${users.map(u => `
+                        <tr>
+                            <td>
+                                <div class="user-info">
+                                    <span class="user-email">${u.email}</span>
+                                    <span class="user-name">${u.name}</span>
+                                </div>
+                            </td>
+                            <td>${new Date(u.createdAt).toLocaleDateString('fr-FR')}</td>
+                            <td>
+                                ${u.isBlocked
+                                    ? '<span class="status blocked">BLOQUÉ</span>'
+                                    : u.isPremium
+                                        ? '<span class="status premium">✅ PREMIUM</span>'
+                                        : '<span class="status free">GRATUIT</span>'
+                                }
+                            </td>
+                            <td>
+                                ${u.isTranslationPremium
+                                    ? '<span class="status translation">✅ ACTIF</span>'
+                                    : '<span class="status free">—</span>'
+                                }
+                            </td>
+                            <td>${u.approvedPayments > 0 ? `✅ ${u.approvedPayments}` : '—'}</td>
+                            <td>
+                                ${u.isBlocked
+                                    ? `<button class="btn btn-unblock" onclick="unblockUser('${u.uuid}','${u.email}')">🔓 Débloquer</button>`
+                                    : '—'
+                                }
+                            </td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>`;
+    }
+
+    function updateUserStats(stats) {
+        document.getElementById('totalUsers').textContent = stats.total;
+        document.getElementById('premiumUsers').textContent = stats.premium;
+        document.getElementById('freeUsers').textContent = stats.free;
+        document.getElementById('blockedUsersCount').textContent = stats.blocked;
+        document.getElementById('newToday').textContent = stats.newToday;
+        document.getElementById('evolution-total').textContent = stats.total;
+        const rate = stats.total > 0 ? ((stats.premium / stats.total) * 100).toFixed(1) : 0;
+        document.getElementById('conversion-rate').textContent = rate + '%';
+
+        // Stats traduction (calculées depuis allUsers)
+        const translationPremium = allUsers.filter(u => u.isTranslationPremium).length;
+        document.getElementById('translationPremiumUsers').textContent = translationPremium;
+        const rateT = stats.total > 0 ? ((translationPremium / stats.total) * 100).toFixed(1) : 0;
+        document.getElementById('conversion-rate-translation').textContent = rateT + '%';
+    }
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // AFFICHAGE PAIEMENTS
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    function displayPayments(payments, type) {
+        const container = document.getElementById(`payments-list-${type}`);
+        const label = type === 'general' ? '1000 FC' : '2000 FC';
+
+        if (!payments.length) {
+            container.innerHTML = `<div class="empty-state"><div class="empty-state-icon">✅</div><p>Aucun paiement ${label} en attente</p></div>`;
+            return;
+        }
+        container.innerHTML = `
+            <table>
+                <thead>
+                    <tr>
+                        <th>Utilisateur</th>
+                        <th>Numéro / Opérateur</th>
+                        <th>Transaction ID</th>
+                        <th>Montant</th>
+                        <th>Date</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${payments.map(p => `
+                        <tr>
+                            <td>
+                                <div class="user-info">
+                                    <span class="user-email">${p.username || p.userName || '—'}</span>
+                                    <span class="user-name">${p.useremail || p.userEmail || '—'}</span>
+                                </div>
+                            </td>
+                            <td>${p.phonenumber || p.phoneNumber}<br><span class="badge">${p.operator}</span></td>
+                            <td><code>${p.transactionid || p.transactionId}</code></td>
+                            <td><strong>${p.amount} ${p.currency}</strong><br>
+                                <span class="badge ${type}">${type === 'translation' ? '🔵 Traduction' : '💜 Général'}</span>
+                            </td>
+                            <td>${new Date(p.submittedat || p.submittedAt).toLocaleString('fr-FR')}</td>
+                            <td>
+                                <div class="actions">
+                                    <button class="btn btn-approve" onclick="approvePayment(${p.id})">✅ Approuver</button>
+                                    <button class="btn btn-reject" onclick="rejectPayment(${p.id}, false)">❌ Rejeter</button>
+                                    <button class="btn btn-fraud" onclick="rejectPayment(${p.id}, true)">🚨 Fraude</button>
+                                </div>
+                            </td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>`;
+    }
+
+    function updatePaymentStats(stats) {
+        document.getElementById('pendingPayments').textContent = stats.pending;
+        document.getElementById('total-approved').textContent = stats.approved;
+    }
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // AFFICHAGE BLOQUÉS
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    function displayBlockedUsers(users) {
+        const container = document.getElementById('blocked-list');
+        if (!users.length) {
+            container.innerHTML = `<div class="empty-state"><div class="empty-state-icon">✅</div><p>Aucun compte bloqué</p></div>`;
+            return;
+        }
+        container.innerHTML = `
+            <table>
+                <thead>
+                    <tr><th>Utilisateur</th><th>Inscription</th><th>IP</th><th>Appareil</th><th>Actions</th></tr>
+                </thead>
+                <tbody>
+                    ${users.map(u => `
+                        <tr>
+                            <td><div class="user-info"><span class="user-email">${u.email}</span><span class="user-name">${u.name}</span></div></td>
+                            <td>${new Date(u.createdAt).toLocaleString('fr-FR')}</td>
+                            <td><code>${u.registrationIP || 'N/A'}</code></td>
+                            <td><code>${u.deviceFingerprint ? u.deviceFingerprint.substring(0,16)+'...' : 'N/A'}</code></td>
+                            <td><button class="btn btn-unblock" onclick="unblockUser('${u.uuid}','${u.email}')">🔓 Débloquer</button></td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>`;
+    }
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // ACTIONS PAIEMENTS
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    async function approvePayment(id) {
+        if (!confirm('✅ Approuver ce paiement ?\n\nLe premium sera activé définitivement pour cet utilisateur.')) return;
+        try {
+            const r = await fetch(`${API_URL}/admin/payments/${id}/approve`, {
+                method: 'POST',
+                headers: { 'X-Admin-Password': adminPassword }
+            });
+            if (r.ok) { alert('✅ Paiement approuvé ! Premium activé.'); loadData(); }
+            else { const d = await r.json(); alert('❌ Erreur : ' + d.error); }
+        } catch (e) { alert('❌ Erreur de connexion'); }
+    }
+
+    async function rejectPayment(id, isFraud) {
+        let reason = null;
+
+        if (isFraud) {
+            reason = prompt('🚨 BLOCAGE POUR FRAUDE\n\nRaison (sera enregistrée):', 'Transaction frauduleuse');
+            if (!reason) return;
+            if (!confirm(`⚠️ Ceci va BLOQUER définitivement :\n✅ Le compte\n✅ Le numéro de téléphone\n✅ L'appareil\n\nContinuer ?`)) return;
+        } else {
+            if (!confirm('❌ Rejeter ce paiement ? (Simple rejet, pas de blocage)')) return;
+        }
+
+        try {
+            const r = await fetch(`${API_URL}/admin/payments/${id}/reject`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-Admin-Password': adminPassword },
+                body: JSON.stringify({ isFraud, reason })
+            });
+            const data = await r.json();
+            if (r.ok) {
+                alert(isFraud
+                    ? '🚨 Fraude signalée ! Compte, téléphone et appareil bloqués.'
+                    : '❌ Paiement rejeté (simple rejet).'
+                );
+                loadData();
+            } else { alert('❌ Erreur : ' + data.error); }
+        } catch (e) { alert('❌ Erreur de connexion'); }
+    }
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // DÉBLOQUER
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    async function unblockUser(uuid, email) {
+        if (!confirm(`🔓 Débloquer le compte de ${email} ?`)) return;
+        try {
+            const r = await fetch(`${API_URL}/admin/users/${uuid}/unblock`, {
+                method: 'POST',
+                headers: { 'X-Admin-Password': adminPassword }
+            });
+            if (r.ok) { alert('✅ Compte débloqué.'); loadData(); }
+            else { const d = await r.json(); alert('❌ ' + d.error); }
+        } catch (e) { alert('❌ Erreur de connexion'); }
+    }
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // SPONSORS
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    async function loadSponsors() {
+        try {
+            const r = await fetch(`${API_URL}/admin/sponsors`, {
+                headers: { 'X-Admin-Password': adminPassword }
+            });
+            const data = await r.json();
+            displaySponsors(data.sponsors);
+            document.getElementById('sponsorsCount').textContent =
+                data.sponsors.filter(s => s.isvisible || s.isVisible).length;
+        } catch (e) { console.error('Erreur sponsors:', e); }
+    }
+
+    function displaySponsors(sponsors) {
+        const container = document.getElementById('sponsors-list');
+        if (!sponsors.length) {
+            container.innerHTML = `<div class="empty-state"><div class="empty-state-icon">🏆</div><p>Aucun sponsor pour l'instant</p></div>`;
+            return;
+        }
+
+        const tierLabel = { diamant: '💎 Diamant', or: '🥇 Or', argent: '🥈 Argent' };
+        const tierClass = { diamant: 'tier-diamant', or: 'tier-or', argent: 'tier-argent' };
+
+        container.innerHTML = `
+            <table>
+                <thead>
+                    <tr><th>Nom</th><th>Palier</th><th>Montant</th><th>Message</th><th>Visible</th><th>Actions</th></tr>
+                </thead>
+                <tbody>
+                    ${sponsors.map(s => `
+                        <tr>
+                            <td><strong>${s.name}</strong></td>
+                            <td><span class="${tierClass[s.tier]}">${tierLabel[s.tier]}</span></td>
+                            <td>${s.amount ? `${s.amount} ${s.currency}` : '—'}</td>
+                            <td>${s.message || '—'}</td>
+                            <td>${(s.isvisible || s.isVisible) ? '✅' : '❌'}</td>
+                            <td>
+                                <div class="actions">
+                                    <button class="btn btn-edit" onclick="toggleSponsorVisibility(${s.id}, ${s.isvisible || s.isVisible})">
+                                        ${(s.isvisible || s.isVisible) ? '🙈 Masquer' : '👁️ Afficher'}
+                                    </button>
+                                    <button class="btn btn-delete" onclick="deleteSponsor(${s.id}, '${s.name}')">🗑️ Supprimer</button>
+                                </div>
+                            </td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>`;
+    }
+
+    async function addSponsor() {
+        const name = document.getElementById('sponsor-name').value.trim();
+        const tier = document.getElementById('sponsor-tier').value;
+        const amount = document.getElementById('sponsor-amount').value;
+        const currency = document.getElementById('sponsor-currency').value;
+        const message = document.getElementById('sponsor-message').value.trim();
+
+        if (!name) { alert('Le nom du sponsor est requis !'); return; }
+
+        try {
+            const r = await fetch(`${API_URL}/admin/sponsors`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-Admin-Password': adminPassword },
+                body: JSON.stringify({ name, tier, amount: amount || null, currency, message: message || null })
+            });
+            const data = await r.json();
+            if (r.ok) {
+                alert(`✅ Sponsor "${name}" ajouté !`);
+                document.getElementById('sponsor-name').value = '';
+                document.getElementById('sponsor-amount').value = '';
+                document.getElementById('sponsor-message').value = '';
+                loadSponsors();
+            } else { alert('❌ Erreur : ' + data.error); }
+        } catch (e) { alert('❌ Erreur de connexion'); }
+    }
+
+    async function toggleSponsorVisibility(id, currentlyVisible) {
+        try {
+            const r = await fetch(`${API_URL}/admin/sponsors/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', 'X-Admin-Password': adminPassword },
+                body: JSON.stringify({ isVisible: !currentlyVisible })
+            });
+            if (r.ok) loadSponsors();
+        } catch (e) { alert('❌ Erreur de connexion'); }
+    }
+
+    async function deleteSponsor(id, name) {
+        if (!confirm(`🗑️ Supprimer le sponsor "${name}" définitivement ?`)) return;
+        try {
+            const r = await fetch(`${API_URL}/admin/sponsors/${id}`, {
+                method: 'DELETE',
+                headers: { 'X-Admin-Password': adminPassword }
+            });
+            if (r.ok) { alert('✅ Sponsor supprimé.'); loadSponsors(); }
+            else { const d = await r.json(); alert('❌ ' + d.error); }
+        } catch (e) { alert('❌ Erreur de connexion'); }
+    }
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // FILTRES UTILISATEURS
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    document.addEventListener('DOMContentLoaded', () => {
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentFilter = btn.dataset.filter;
+                filterUsers();
+            });
+        });
+        document.getElementById('userSearch')?.addEventListener('input', e => filterUsers(e.target.value));
+    });
+
+    function filterUsers(searchTerm = '') {
+        let filtered = allUsers;
+        if (currentFilter === 'premium') filtered = filtered.filter(u => u.isPremium && !u.isBlocked);
+        else if (currentFilter === 'translation') filtered = filtered.filter(u => u.isTranslationPremium && !u.isBlocked);
+        else if (currentFilter === 'free') filtered = filtered.filter(u => !u.isPremium && !u.isTranslationPremium && !u.isBlocked);
+        else if (currentFilter === 'blocked') filtered = filtered.filter(u => u.isBlocked);
+        if (searchTerm) {
+            filtered = filtered.filter(u =>
+                u.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                u.email.toLowerCase().includes(searchTerm.toLowerCase())
+            );
+        }
+        displayUsers(filtered);
+    }
+
+    // Auto-refresh toutes les 30 secondes
+    setInterval(loadData, 30000);
+</script>
+</body>
+</html>
